@@ -590,7 +590,10 @@ NSString * const PINDiskCacheSharedName = @"PINDiskCacheShared";
         
         if ([[NSFileManager defaultManager] fileExistsAtPath:[fileURL path]]) {
             @try {
-                object = [NSKeyedUnarchiver unarchiveObjectWithFile:[fileURL path]];
+                object = [UIImage imageWithContentsOfFile:[fileURL path]];
+                if (!object) {
+                    object = [NSKeyedUnarchiver unarchiveObjectWithFile:[fileURL path]];
+                }
             }
             @catch (NSException *exception) {
                 NSError *error = nil;
@@ -651,9 +654,16 @@ NSString * const PINDiskCacheSharedName = @"PINDiskCacheShared";
         
         if (self->_willAddObjectBlock)
             self->_willAddObjectBlock(self, key, object, fileURL);
-        
-        BOOL written = [NSKeyedArchiver archiveRootObject:object toFile:[fileURL path]];
-        
+    
+        BOOL written;
+        UIImage *image = (UIImage *)object;
+        if ([image isKindOfClass:[UIImage class]]) {
+            written = [UIImagePNGRepresentation(image) writeToFile:[fileURL path] atomically:YES];
+        } else {
+            written = [NSKeyedArchiver archiveRootObject:object toFile:[fileURL path]];
+        }
+    
+    
         if (written) {
             [self setFileModificationDate:now forURL:fileURL];
             
